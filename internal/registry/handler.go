@@ -122,9 +122,7 @@ func (h *Handler) GetManifest(c fiber.Ctx) error {
 		}
 		return errResponse(c, OciErrorCodeInternalError, err.Error())
 	}
-	defer func() {
-		_ = manifestBody.Close()
-	}()
+	// manifestBody will be closed by fasthttp
 
 	ifNoneMatch := c.Get("If-None-Match")
 	if ifNoneMatch != "" && manifestInfo.ETag != "" && ifNoneMatch == manifestInfo.ETag {
