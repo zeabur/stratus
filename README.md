@@ -1,6 +1,6 @@
-# oci-ro-registry-go
+# S3 OCI Registry - Read-Only API
 
-A read-only OCI Distribution Spec v1 registry (Docker Registry V2 API) backed by MinIO/S3. Images are stored in S3 and served to Docker/containerd clients via blob redirect and manifest streaming.
+A read-only OCI Distribution Spec v1 registry (Docker Registry V2 API) backed by S3. Images are stored in S3 and served to Docker/containerd clients via blob redirect and manifest streaming.
 
 ## Implemented endpoints
 
