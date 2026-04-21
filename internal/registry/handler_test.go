@@ -180,7 +180,7 @@ func TestGetBlob_GET_EmptyBlob(t *testing.T) {
 func TestGetBlob_GET_InvalidDigest(t *testing.T) {
 	resp := doRequest(t, newFakeStorage(), "GET", "/v2/ns/repo/blobs/md5:abc123", nil)
 	assertStatus(t, resp, http.StatusBadRequest)
-	assertBodyCode(t, resp, "BLOB_UNKNOWN")
+	assertBodyCode(t, resp, "DIGEST_INVALID")
 }
 
 func TestGetBlob_HEAD_Existing(t *testing.T) {
