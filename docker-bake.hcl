@@ -29,4 +29,8 @@ target "registry" {
   dockerfile = "Dockerfile"
   platforms  = ["linux/amd64", "linux/arm64"]
   tags       = tags(VERSION)
+  labels = {
+    "org.opencontainers.image.source" = "https://github.com/zeabur/oci-ro-registry-go"
+    "org.opencontainers.image.author" = "contact@zeabur.com"
+  }
 }
