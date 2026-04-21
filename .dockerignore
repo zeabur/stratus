@@ -1,0 +1,4 @@
+.env*
+flake*
+*.md
+docker-bake.hcl
