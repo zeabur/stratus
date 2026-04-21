@@ -28,14 +28,24 @@ PORT=3000                             # optional
 
 ## Running with Docker
 
-```bash
-docker build -t zeabur/oci-ro-registry:2 .
+Prebuilt multi-platform images (`linux/amd64`, `linux/arm64`) are available on Docker Hub:
 
+```bash
+docker pull zeabur/oci-ro-registry:2
+```
+
+```bash
 docker run -p 3000:3000 \
   -e S3_ENDPOINT=minio.example.com:9000 \
   -e S3_ACCESS_KEY_ID=minioadmin \
   -e S3_SECRET_ACCESS_KEY=minioadmin \
   zeabur/oci-ro-registry:2
+```
+
+To build from source instead:
+
+```bash
+docker build -t zeabur/oci-ro-registry:2 .
 ```
 
 ## Building multi-platform images
