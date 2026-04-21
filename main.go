@@ -14,7 +14,7 @@ func main() {
 
 	cfg := config.Load()
 
-	s3, err := storage.NewMinioStorage(cfg.S3Endpoint, cfg.S3AccessKeyID, cfg.S3SecretKey, cfg.S3Region, cfg.S3UseSSL)
+	s3, err := storage.NewMinioStorage(cfg.S3Endpoint, cfg.S3AccessKeyID, cfg.S3SecretKey, cfg.S3Region, cfg.S3UseSSL, cfg.S3PathStyle)
 	if err != nil {
 		slog.Error("failed to create storage client", "error", err)
 		os.Exit(1)

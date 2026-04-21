@@ -14,11 +14,16 @@ type MinioStorage struct {
 	client *minio.Client
 }
 
-func NewMinioStorage(endpoint, accessKeyID, secretKey, region string, useSSL bool) (*MinioStorage, error) {
+func NewMinioStorage(endpoint, accessKeyID, secretKey, region string, useSSL, pathStyle bool) (*MinioStorage, error) {
+	lookup := minio.BucketLookupDNS
+	if pathStyle {
+		lookup = minio.BucketLookupPath
+	}
 	client, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKeyID, secretKey, ""),
-		Secure: useSSL,
-		Region: region,
+		Creds:        credentials.NewStaticV4(accessKeyID, secretKey, ""),
+		Secure:       useSSL,
+		Region:       region,
+		BucketLookup: lookup,
 	})
 	if err != nil {
 		return nil, err
@@ -51,7 +56,7 @@ func (s *MinioStorage) GetObject(ctx context.Context, bucket, key string) (io.Re
 
 	stat, err := obj.Stat()
 	if err != nil {
-		obj.Close()
+		_ = obj.Close()
 		if isMinioNotFound(err) {
 			return nil, nil, ErrObjectNotFound
 		}

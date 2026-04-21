@@ -3,13 +3,14 @@ package config
 import "os"
 
 type Config struct {
-	Port          string
-	BucketName    string
-	S3Endpoint    string
-	S3AccessKeyID string
-	S3SecretKey   string
-	S3UseSSL      bool
-	S3Region      string
+	Port            string
+	BucketName      string
+	S3Endpoint      string
+	S3AccessKeyID   string
+	S3SecretKey     string
+	S3UseSSL        bool
+	S3Region        string
+	S3PathStyle     bool
 }
 
 func Load() *Config {
@@ -21,6 +22,7 @@ func Load() *Config {
 		S3SecretKey:   os.Getenv("S3_SECRET_ACCESS_KEY"),
 		S3UseSSL:      os.Getenv("S3_USE_SSL") == "true",
 		S3Region:      getEnvOrDefault("S3_REGION", "us-east-1"),
+		S3PathStyle:   os.Getenv("S3_PATH_STYLE") == "true",
 	}
 }
 
