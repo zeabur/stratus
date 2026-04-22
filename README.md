@@ -107,15 +107,75 @@ See the [BuildKit OCI/Docker exporters documentation](https://docs.docker.com/bu
 
 ### Usage
 
+Install the module:
+
+```bash
+go get github.com/zeabur/stratus/v2
+```
+
 ```go
 import (
+    "context"
+    "fmt"
     "os"
-    "github.com/zeabur/stratus/v2/pkg/push"
+
+    stratusconfig  "github.com/zeabur/stratus/v2/pkg/config"
+    stratuspush    "github.com/zeabur/stratus/v2/pkg/push"
+    stratusstorage "github.com/zeabur/stratus/v2/pkg/storage"
 )
 
-srcFS := os.DirFS("image-layout")  // or archive/tar FS from the .tar file
-err := push.PushOciLayout(ctx, storageClient, bucketName, srcFS, "namespace/myapp", "latest")
+func pushImage(ctx context.Context, ociLayoutFS fs.FS, imageName, tag string) error {
+    cfg := stratusconfig.Load()
+
+    storage, err := stratusstorage.MinioStorageFromConfig(cfg)
+    if err != nil {
+        return fmt.Errorf("create storage: %w", err)
+    }
+
+    err = stratuspush.PushOciLayout(
+        ctx,
+        storage,
+        cfg.BucketName,
+        ociLayoutFS,
+        imageName,
+        tag,
+        stratuspush.WithLogOutput(os.Stderr),
+    )
+    if err != nil {
+        return fmt.Errorf("push oci layout to S3: %w", err)
+    }
+
+    return nil
+}
 ```
+
+**`ociLayoutFS`** must be an [`fs.FS`](https://pkg.go.dev/io/fs#FS) rooted at an OCI image layout directory — i.e. a directory containing `index.json`, `oci-layout`, and `blobs/sha256/`. Obtain one from a BuildKit export:
+
+```bash
+docker buildx build --output type=oci,dest=image.tar .
+mkdir image-layout && tar -xf image.tar -C image-layout
+```
+
+Then pass it as `os.DirFS("image-layout")`.
+
+**`config.Load()`** reads configuration from environment variables:
+
+```bash
+S3_ENDPOINT=minio.example.com:9000   # required — no scheme
+S3_ACCESS_KEY_ID=minioadmin          # required
+S3_SECRET_ACCESS_KEY=minioadmin      # required
+S3_BUCKET_NAME=zeabur-oci-registry   # optional, this is the default
+S3_USE_SSL=false                     # optional, default false
+S3_REGION=us-east-1                  # optional
+S3_PATH_STYLE=false                  # optional, set true for MinIO path-style access
+```
+
+**Available options for `PushOciLayout`:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `WithLogOutput(w io.Writer)` | `os.Stderr` | Progress log destination |
+| `WithBlobUploadConcurrency(n int)` | `4` | Number of blobs uploaded in parallel |
 
 `PushOciLayout` uploads blobs concurrently (skipping any already present in S3), then atomically merges the local image index with the existing remote index before writing it back.
 
