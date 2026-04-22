@@ -19,6 +19,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 
+	"github.com/zeabur/stratus/internal/registry"
 	internalstorage "github.com/zeabur/stratus/internal/storage"
 )
 
@@ -107,9 +108,9 @@ func TestIntegration_PushOciLayout(t *testing.T) {
 	existingDigest := strings.Repeat("b", 64)
 	blobData := []byte("integration test layer data")
 
-	localIndex := OciIndex{
+	localIndex := registry.OciManifestIndex{
 		SchemaVersion: 2,
-		Manifests: []OciIndexManifest{
+		Manifests: []registry.OciManifest{
 			{
 				MediaType:   "application/vnd.oci.image.manifest.v1+json",
 				Digest:      "sha256:" + newDigest,
@@ -130,9 +131,9 @@ func TestIntegration_PushOciLayout(t *testing.T) {
 	}
 
 	// Pre-create an existing remote index to verify merging.
-	existingIndex := OciIndex{
+	existingIndex := registry.OciManifestIndex{
 		SchemaVersion: 2,
-		Manifests: []OciIndexManifest{
+		Manifests: []registry.OciManifest{
 			{
 				MediaType: "application/vnd.oci.image.manifest.v1+json",
 				Digest:    "sha256:" + existingDigest,
@@ -146,7 +147,7 @@ func TestIntegration_PushOciLayout(t *testing.T) {
 	existingIndexBytes, _ := json.Marshal(existingIndex)
 
 	repo := prefix + "push-test/oci-layout-repo"
-	indexKey := s3IndexPath(repo)
+	indexKey := registry.IndexPath(repo)
 
 	if _, err := raw.PutObject(ctx, bucket, indexKey,
 		bytes.NewReader(existingIndexBytes), int64(len(existingIndexBytes)),
@@ -169,12 +170,12 @@ func TestIntegration_PushOciLayout(t *testing.T) {
 	}
 
 	// Verify oci-layout exists.
-	if _, err := raw.StatObject(ctx, bucket, s3OciLayoutPath(repo), minio.StatObjectOptions{}); err != nil {
+	if _, err := raw.StatObject(ctx, bucket, registry.OciLayoutPath(repo), minio.StatObjectOptions{}); err != nil {
 		t.Fatalf("StatObject oci-layout: %v", err)
 	}
 
 	// Verify blob cache-control.
-	blobKey := s3BlobPath(repo, newDigest)
+	blobKey := registry.BlobPath(repo, newDigest)
 	blobInfo, err := raw.StatObject(ctx, bucket, blobKey, minio.StatObjectOptions{})
 	if err != nil {
 		t.Fatalf("StatObject blob: %v", err)
@@ -188,7 +189,7 @@ func TestIntegration_PushOciLayout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetObject index: %v", err)
 	}
-	var merged OciIndex
+	var merged registry.OciManifestIndex
 	decodeErr := json.NewDecoder(idxObj).Decode(&merged)
 	_ = idxObj.Close()
 	if decodeErr != nil {
