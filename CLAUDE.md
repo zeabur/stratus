@@ -66,7 +66,7 @@ go vet ./...
 go run .
 
 # Build Docker image (single platform)
-docker build -t zeabur/oci-ro-registry:2 .
+docker build -t zeabur/stratus:2 .
 
 # Build multi-platform image with docker-bake.hcl (linux/amd64 + linux/arm64)
 docker buildx bake                         # uses VERSION=2.0.2 default

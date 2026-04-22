@@ -7,7 +7,7 @@ variable "REGISTRY" {
 }
 
 variable "IMAGE" {
-  default = "zeabur/oci-ro-registry"
+  default = "zeabur/stratus"
 }
 
 function "tags" {

@@ -38,7 +38,7 @@ PORT=3000                             # optional
 Prebuilt multi-platform images (`linux/amd64`, `linux/arm64`) are available on Docker Hub:
 
 ```bash
-docker pull zeabur/oci-ro-registry:2
+docker pull zeabur/stratus:2
 ```
 
 ```bash
@@ -46,13 +46,13 @@ docker run -p 3000:3000 \
   -e S3_ENDPOINT=minio.example.com:9000 \
   -e S3_ACCESS_KEY_ID=minioadmin \
   -e S3_SECRET_ACCESS_KEY=minioadmin \
-  zeabur/oci-ro-registry:2
+  zeabur/stratus:2
 ```
 
 To build from source instead:
 
 ```bash
-docker build -t zeabur/oci-ro-registry:2 .
+docker build -t zeabur/stratus:2 .
 ```
 
 ### Building multi-platform images
@@ -70,7 +70,7 @@ VERSION=2.0.2 docker buildx bake --push
 Override `REGISTRY` or `IMAGE` variables to target a different registry:
 
 ```bash
-REGISTRY=ghcr.io IMAGE=your-org/oci-ro-registry VERSION=2.0.2 docker buildx bake --push
+REGISTRY=ghcr.io IMAGE=your-org/stratus VERSION=2.0.2 docker buildx bake --push
 ```
 
 ### S3 bucket layout
