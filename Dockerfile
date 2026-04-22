@@ -5,9 +5,9 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/registry .
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/stratus ./cmd/stratus
 
 FROM gcr.io/distroless/static:nonroot
-COPY --from=build /out/registry /registry
+COPY --from=build /out/stratus /stratus
 EXPOSE 3000
-ENTRYPOINT ["/registry"]
+ENTRYPOINT ["/stratus"]

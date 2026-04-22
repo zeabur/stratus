@@ -1,15 +1,16 @@
-# OCI Read-Only Registry — Go
+# Stratus — A stateless OCI Registry (Go)
 
 ## What this is
 
-A read-only OCI Distribution Spec v1 registry (Docker Registry V2 API) backed by MinIO/S3.
-Images are served directly from S3 — blobs via presigned-URL redirect, manifests streamed.
-Write operations are not implemented.
+A monorepo with two components:
+
+- **`cmd/stratus`** — Read-only OCI Distribution Spec v1 registry (Docker Registry V2 API) backed by S3. Blobs are served via presigned-URL redirect; manifests are streamed. Write operations are not implemented.
+- **`pkg/push`** — Go library for pushing a BuildKit OCI image (`--output type=oci`) to the S3 registry. Accepts an `fs.FS` in OCI layout format, uploads blobs concurrently, and atomically merges the index.
 
 ## Project layout
 
 ```
-main.go                          entry point: wires config → storage → routes
+cmd/stratus/main.go              entry point: wires config → storage → routes
 internal/config/config.go        env loading
 internal/storage/storage.go      Storage interface + ErrObjectNotFound sentinel
 internal/storage/minio.go        MinioStorage backed by minio-go/v7
@@ -19,7 +20,12 @@ internal/registry/handler.go     Index / GetBlob / GetManifest handlers
 internal/registry/routes.go      SetupRoutes() wires fiber app
 internal/registry/handler_test.go  unit tests via fake storage
 internal/registry/export_test.go   exposes unexported helpers for tests
-Dockerfile                       multi-stage build → distroless
+pkg/push/pusher.go               PushOciLayout() — top-level push entrypoint
+pkg/push/uploader.go             concurrent upload with skip-if-exists logic
+pkg/push/manifest_updater.go     remote index fetch + merge
+pkg/push/storage.go              Storage interface used by pkg/push
+pkg/push/storage_builder.go      builds a storage.Storage from env vars
+Dockerfile                       multi-stage build → distroless (cmd/stratus)
 ```
 
 ## S3 storage layout (must match the bucket)
@@ -79,3 +85,17 @@ VERSION=2.0.2 docker buildx bake --push    # build and push all tags
 Tests live in `package registry_test` and use a map-backed `fakeStorage`.
 No real S3/MinIO connection is required to run tests.
 `fiber.App.Test(*http.Request)` is used to exercise the full HTTP stack.
+
+## Integration tests
+
+Integration tests require real S3 credentials and are gated behind the `integration` build tag.
+
+```bash
+STORAGE_TEST_ACCESS_KEY_ID=ACCESS_KEY_ID \
+STORAGE_TEST_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY \
+STORAGE_TEST_BUCKET=BUCKET \
+STORAGE_TEST_REGION=REGION \
+STORAGE_TEST_ENDPOINT=https://ENDPOINT \
+STORAGE_TEST_PATH_STYLE=0 \
+go test -tags=integration -v ./... -run Integration
+```

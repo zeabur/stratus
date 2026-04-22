@@ -1,8 +1,15 @@
-# S3 OCI Registry - Read-Only API
+# Stratus — OCI Registry
 
-A read-only OCI Distribution Spec v1 registry (Docker Registry V2 API) backed by S3. Images are stored in S3 and served to Docker/containerd clients via blob redirect and manifest streaming.
+A monorepo with two components:
 
-## Implemented endpoints
+- **`cmd/stratus`** — Read-only OCI Distribution Spec v1 registry (Docker Registry V2 API) backed by S3. Images are served to Docker/containerd clients via blob redirect and manifest streaming.
+- **`pkg/push`** — Go library for pushing a BuildKit OCI image to the S3 registry. Accepts an `fs.FS` produced by BuildKit's OCI exporter (`--output type=oci,dest=image.tar` or via `docker buildx build --output type=oci`; see [BuildKit OCI/Docker exporters](https://docs.docker.com/build/exporters/oci-docker/)), uploads blobs concurrently, and atomically merges the image index.
+
+---
+
+## cmd/stratus — Read-Only Registry API
+
+### Implemented endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -12,7 +19,7 @@ A read-only OCI Distribution Spec v1 registry (Docker Registry V2 API) backed by
 
 Write endpoints (push, delete, catalog) are not implemented — this is intentional.
 
-## Configuration
+### Configuration
 
 Set the following environment variables before starting:
 
@@ -26,7 +33,7 @@ S3_REGION=us-east-1                   # optional
 PORT=3000                             # optional
 ```
 
-## Running with Docker
+### Running with Docker
 
 Prebuilt multi-platform images (`linux/amd64`, `linux/arm64`) are available on Docker Hub:
 
@@ -48,7 +55,7 @@ To build from source instead:
 docker build -t zeabur/oci-ro-registry:2 .
 ```
 
-## Building multi-platform images
+### Building multi-platform images
 
 [docker-bake.hcl](./docker-bake.hcl) builds `linux/amd64` and `linux/arm64` and tags the image as `2.0.2`, `2.0`, `2`, and `latest`.
 
@@ -66,7 +73,7 @@ Override `REGISTRY` or `IMAGE` variables to target a different registry:
 REGISTRY=ghcr.io IMAGE=your-org/oci-ro-registry VERSION=2.0.2 docker buildx bake --push
 ```
 
-## S3 bucket layout
+### S3 bucket layout
 
 The registry expects images to be stored using the following key structure:
 
@@ -77,6 +84,40 @@ The registry expects images to be stored using the following key structure:
 
 `index.json` is an [OCI image index](https://github.com/opencontainers/image-spec/blob/main/image-index.md) with `schemaVersion: 2`.
 Each manifest entry must include an `org.opencontainers.image.ref.name` annotation for tag-based pulls.
+
+---
+
+## pkg/push — OCI Image Pusher
+
+`pkg/push` is a Go library that pushes a BuildKit OCI layout to the S3 registry. It is intended to be embedded in build pipelines that produce OCI images via BuildKit.
+
+### How to produce a compatible OCI image
+
+Use BuildKit's OCI exporter to produce an OCI layout directory or tarball:
+
+```bash
+# Export to a local directory (requires --output with type=local to untar first, or use a tar file)
+docker buildx build --output type=oci,dest=image.tar .
+
+# Unpack the tar into a directory for use with pkg/push
+mkdir image-layout && tar -xf image.tar -C image-layout
+```
+
+See the [BuildKit OCI/Docker exporters documentation](https://docs.docker.com/build/exporters/oci-docker/) for full options.
+
+### Usage
+
+```go
+import (
+    "os"
+    "github.com/zeabur/stratus/pkg/push"
+)
+
+srcFS := os.DirFS("image-layout")  // or archive/tar FS from the .tar file
+err := push.PushOciLayout(ctx, storageClient, bucketName, srcFS, "namespace/myapp", "latest")
+```
+
+`PushOciLayout` uploads blobs concurrently (skipping any already present in S3), then atomically merges the local image index with the existing remote index before writing it back.
 
 ## Development
 
