@@ -9,8 +9,8 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"strings"
 
+	"github.com/zeabur/stratus/internal/registry"
 	"github.com/zeabur/stratus/internal/storage"
 )
 
@@ -110,7 +110,7 @@ func PushOciLayout(ctx context.Context, dst storage.Storage, bucket string, src 
 	if err != nil {
 		return fmt.Errorf("prepare index upload object: %w", err)
 	}
-	if err := uploadWithRetry(ctx, dst, bucket, s3IndexPath(imageName), indexObj, out); err != nil {
+	if err := uploadWithRetry(ctx, dst, bucket, registry.IndexPath(imageName), indexObj, out); err != nil {
 		return fmt.Errorf("upload index: %w", err)
 	}
 
@@ -119,7 +119,7 @@ func PushOciLayout(ctx context.Context, dst storage.Storage, bucket string, src 
 	if err != nil {
 		return fmt.Errorf("prepare oci-layout upload object: %w", err)
 	}
-	if err := uploadWithRetry(ctx, dst, bucket, s3OciLayoutPath(imageName), layoutObj, out); err != nil {
+	if err := uploadWithRetry(ctx, dst, bucket, registry.OciLayoutPath(imageName), layoutObj, out); err != nil {
 		return fmt.Errorf("upload oci-layout: %w", err)
 	}
 
@@ -127,32 +127,13 @@ func PushOciLayout(ctx context.Context, dst storage.Storage, bucket string, src 
 	return nil
 }
 
-func s3RepoPath(repo string) string {
-	if !strings.Contains(repo, "/") {
-		return "library/" + repo
-	}
-	return repo
-}
-
-func s3IndexPath(repo string) string {
-	return s3RepoPath(repo) + "/index.json"
-}
-
-func s3OciLayoutPath(repo string) string {
-	return s3RepoPath(repo) + "/oci-layout"
-}
-
-func s3BlobPath(repo, digestHexWithoutPrefix string) string {
-	return s3RepoPath(repo) + "/blobs/sha256/" + digestHexWithoutPrefix
-}
-
 // readOciIndexFromFS reads and parses an OCI index.json file from a filesystem
-func readOciIndexFromFS(fsys fs.FS, filePath string) (*OciIndex, error) {
+func readOciIndexFromFS(fsys fs.FS, filePath string) (*registry.OciManifestIndex, error) {
 	data, err := fs.ReadFile(fsys, filePath)
 	if err != nil {
 		return nil, err
 	}
-	var index OciIndex
+	var index registry.OciManifestIndex
 	err = json.Unmarshal(data, &index)
 	return &index, err
 }
@@ -188,7 +169,7 @@ func uploadBlobsConcurrently(ctx context.Context, s storage.Storage, bucket stri
 		}
 
 		task := UploadTask{
-			Key:       s3BlobPath(repo, hex),
+			Key:       registry.BlobPath(repo, hex),
 			Object:    uploadObj,
 			SkipCheck: newBlobSkipCheck(label, output),
 		}

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	"github.com/zeabur/stratus/internal/registry"
 )
 
 func TestPushOciLayoutUploadsToProvidedStorage(t *testing.T) {
@@ -20,9 +22,9 @@ func TestPushOciLayoutUploadsToProvidedStorage(t *testing.T) {
 	existingDigest := strings.Repeat("b", 64)
 	blobData := []byte("layer-data")
 
-	localIndex := OciIndex{
+	localIndex := registry.OciManifestIndex{
 		SchemaVersion: 2,
-		Manifests: []OciIndexManifest{
+		Manifests: []registry.OciManifest{
 			{
 				MediaType:   "application/vnd.oci.image.manifest.v1+json",
 				Digest:      "sha256:" + newDigest,
@@ -43,9 +45,9 @@ func TestPushOciLayoutUploadsToProvidedStorage(t *testing.T) {
 		path.Join("blobs", "sha256", newDigest): {Data: blobData},
 	}
 
-	existingIndex := OciIndex{
+	existingIndex := registry.OciManifestIndex{
 		SchemaVersion: 2,
-		Manifests: []OciIndexManifest{
+		Manifests: []registry.OciManifest{
 			{
 				MediaType:   "application/vnd.oci.image.manifest.v1+json",
 				Digest:      "sha256:" + existingDigest,
@@ -61,7 +63,7 @@ func TestPushOciLayoutUploadsToProvidedStorage(t *testing.T) {
 
 	mock := &mockStorage{
 		objects: map[string][]byte{
-			s3IndexPath(repo): existingIndexBytes,
+			registry.IndexPath(repo): existingIndexBytes,
 		},
 	}
 
@@ -69,23 +71,23 @@ func TestPushOciLayoutUploadsToProvidedStorage(t *testing.T) {
 		t.Fatalf("PushOciLayout: %v", err)
 	}
 
-	blobKey := s3BlobPath(repo, newDigest)
+	blobKey := registry.BlobPath(repo, newDigest)
 	if stored := mock.StoredObject(blobKey); stored == nil || !bytes.Equal(stored, blobData) {
 		t.Fatalf("blob %s not uploaded correctly", blobKey)
 	}
 
-	layoutKey := s3OciLayoutPath(repo)
+	layoutKey := registry.OciLayoutPath(repo)
 	if stored := mock.StoredObject(layoutKey); stored == nil || !bytes.Equal(stored, ociLayoutData) {
 		t.Fatalf("oci-layout not uploaded correctly")
 	}
 
-	indexKey := s3IndexPath(repo)
+	indexKey := registry.IndexPath(repo)
 	indexBytes := mock.StoredObject(indexKey)
 	if indexBytes == nil {
 		t.Fatalf("index.json was not uploaded")
 	}
 
-	var merged OciIndex
+	var merged registry.OciManifestIndex
 	if err := json.Unmarshal(indexBytes, &merged); err != nil {
 		t.Fatalf("unmarshal merged index: %v", err)
 	}
@@ -114,9 +116,9 @@ func TestPushOciLayoutRequiresStorage(t *testing.T) {
 	t.Parallel()
 
 	digest := strings.Repeat("c", 64)
-	index := OciIndex{
+	index := registry.OciManifestIndex{
 		SchemaVersion: 2,
-		Manifests: []OciIndexManifest{
+		Manifests: []registry.OciManifest{
 			{
 				MediaType:   "application/vnd.oci.image.manifest.v1+json",
 				Digest:      "sha256:" + digest,
@@ -150,9 +152,9 @@ func TestPushOciLayout_WithLogOutput(t *testing.T) {
 	digest := strings.Repeat("d", 64)
 	blobData := []byte("log-test")
 
-	localIndex := OciIndex{
+	localIndex := registry.OciManifestIndex{
 		SchemaVersion: 2,
-		Manifests: []OciIndexManifest{
+		Manifests: []registry.OciManifest{
 			{
 				MediaType:   "application/vnd.oci.image.manifest.v1+json",
 				Digest:      "sha256:" + digest,
@@ -164,9 +166,9 @@ func TestPushOciLayout_WithLogOutput(t *testing.T) {
 	localIndexBytes, _ := json.Marshal(localIndex)
 
 	fsys := fstest.MapFS{
-		"index.json":                          {Data: localIndexBytes},
-		"oci-layout":                          {Data: []byte(`{"imageLayoutVersion":"1.0.0"}`)},
-		path.Join("blobs", "sha256", digest):  {Data: blobData},
+		"index.json":                         {Data: localIndexBytes},
+		"oci-layout":                         {Data: []byte(`{"imageLayoutVersion":"1.0.0"}`)},
+		path.Join("blobs", "sha256", digest): {Data: blobData},
 	}
 
 	mock := &mockStorage{}

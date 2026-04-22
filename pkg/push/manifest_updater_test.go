@@ -2,14 +2,16 @@ package push
 
 import (
 	"testing"
+
+	"github.com/zeabur/stratus/internal/registry"
 )
 
 func TestMergeIndex(t *testing.T) {
 	updater := NewOCIManifestUpdater(nil, "")
 
-	incoming := &OciIndex{
+	incoming := &registry.OciManifestIndex{
 		SchemaVersion: 2,
-		Manifests: []OciIndexManifest{
+		Manifests: []registry.OciManifest{
 			{
 				MediaType: "application/vnd.oci.image.manifest.v1+json",
 				Digest:    "sha256:aaa",
@@ -21,9 +23,9 @@ func TestMergeIndex(t *testing.T) {
 		},
 	}
 
-	existing := &OciIndex{
+	existing := &registry.OciManifestIndex{
 		SchemaVersion: 2,
-		Manifests: []OciIndexManifest{
+		Manifests: []registry.OciManifest{
 			{
 				MediaType: "application/vnd.oci.image.manifest.v1+json",
 				Digest:    "sha256:aaa",
@@ -69,9 +71,9 @@ func TestMergeIndex(t *testing.T) {
 func TestMergeIndex_ExistingNil(t *testing.T) {
 	updater := NewOCIManifestUpdater(nil, "")
 
-	incoming := &OciIndex{
+	incoming := &registry.OciManifestIndex{
 		SchemaVersion: 2,
-		Manifests: []OciIndexManifest{
+		Manifests: []registry.OciManifest{
 			{
 				MediaType: "application/vnd.oci.image.manifest.v1+json",
 				Digest:    "sha256:aaa",
@@ -109,9 +111,9 @@ func TestMergeIndex_ExistingNil(t *testing.T) {
 func TestMergeIndex_IncomingNil(t *testing.T) {
 	updater := NewOCIManifestUpdater(nil, "")
 
-	existing := &OciIndex{
+	existing := &registry.OciManifestIndex{
 		SchemaVersion: 2,
-		Manifests: []OciIndexManifest{
+		Manifests: []registry.OciManifest{
 			{
 				MediaType: "application/vnd.oci.image.manifest.v1+json",
 				Digest:    "sha256:aaa",
@@ -149,9 +151,9 @@ func TestMergeIndex_IncomingNil(t *testing.T) {
 func TestMergeIndex_LatestWins(t *testing.T) {
 	updater := NewOCIManifestUpdater(nil, "")
 
-	incoming := &OciIndex{
+	incoming := &registry.OciManifestIndex{
 		SchemaVersion: 2,
-		Manifests: []OciIndexManifest{
+		Manifests: []registry.OciManifest{
 			{
 				MediaType: "application/vnd.oci.image.manifest.v1+json",
 				Digest:    "sha256:new",
@@ -163,9 +165,9 @@ func TestMergeIndex_LatestWins(t *testing.T) {
 		},
 	}
 
-	existing := &OciIndex{
+	existing := &registry.OciManifestIndex{
 		SchemaVersion: 2,
-		Manifests: []OciIndexManifest{
+		Manifests: []registry.OciManifest{
 			{
 				MediaType: "application/vnd.oci.image.manifest.v1+json",
 				Digest:    "sha256:old",

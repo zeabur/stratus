@@ -1,4 +1,4 @@
-package registry_test
+package registryapi_test
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zeabur/stratus/internal/registry"
+	"github.com/zeabur/stratus/internal/registryapi"
 	"github.com/zeabur/stratus/internal/storage"
 )
 
@@ -78,7 +78,7 @@ func doRequest(t *testing.T, s storage.ReadStorage, method, path string, headers
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
-	resp, err := registry.SetupRoutes(s, testBucket).Test(req)
+	resp, err := registryapi.SetupRoutes(s, testBucket).Test(req)
 	if err != nil {
 		t.Fatalf("app.Test: %v", err)
 	}
@@ -311,24 +311,4 @@ func TestGetManifest_InvalidIndexJSON(t *testing.T) {
 	resp := doRequest(t, s, "GET", "/v2/ns/repo/manifests/latest", nil)
 	assertStatus(t, resp, http.StatusNotFound)
 	assertBodyCode(t, resp, "MANIFEST_UNKNOWN")
-}
-
-// ---- TestPaths ----
-
-func TestPaths(t *testing.T) {
-	tests := []struct {
-		name string
-		got  string
-		want string
-	}{
-		{"blobPath", registry.BlobPathExported("ns", "repo", "abc"), "ns/repo/blobs/sha256/abc"},
-		{"indexPath", registry.IndexPathExported("ns", "repo"), "ns/repo/index.json"},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if tc.got != tc.want {
-				t.Errorf("got %q, want %q", tc.got, tc.want)
-			}
-		})
-	}
 }

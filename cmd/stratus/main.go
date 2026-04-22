@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/zeabur/stratus/internal/config"
-	"github.com/zeabur/stratus/internal/registry"
+	"github.com/zeabur/stratus/internal/registryapi"
 	"github.com/zeabur/stratus/internal/storage"
 )
 
@@ -20,7 +20,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	app := registry.SetupRoutes(s3, cfg.BucketName)
+	app := registryapi.SetupRoutes(s3, cfg.BucketName)
 	if err := app.Listen(":" + cfg.Port); err != nil {
 		slog.Error("server error", "error", err)
 		os.Exit(1)

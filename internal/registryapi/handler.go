@@ -1,4 +1,4 @@
-package registry
+package registryapi
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/zeabur/stratus/internal/registry"
 	"github.com/zeabur/stratus/internal/storage"
 )
 
@@ -40,7 +41,7 @@ func (h *Handler) GetBlob(c fiber.Ctx) error {
 	}
 
 	digestWithoutPrefix := digest[len(sha256Prefix):]
-	key := blobPath(namespace, repository, digestWithoutPrefix)
+	key := registry.BlobPath(namespace+"/"+repository, digestWithoutPrefix)
 
 	info, err := h.storage.StatObject(c.Context(), h.bucketName, key)
 	if err != nil {
@@ -78,7 +79,7 @@ func (h *Handler) GetManifest(c fiber.Ctx) error {
 	repository := c.Params("repository")
 	reference := c.Params("reference")
 
-	idxBody, _, err := h.storage.GetObject(c.Context(), h.bucketName, indexPath(namespace, repository))
+	idxBody, _, err := h.storage.GetObject(c.Context(), h.bucketName, registry.IndexPath(namespace+"/"+repository))
 	if err != nil {
 		if errors.Is(err, storage.ErrObjectNotFound) {
 			return errResponse(c, OciErrorCodeManifestUnknown, "manifest unknown to registry")
@@ -92,12 +93,12 @@ func (h *Handler) GetManifest(c fiber.Ctx) error {
 		_ = idxBody.Close()
 	}()
 
-	var idx OciManifestIndex
+	var idx registry.OciManifestIndex
 	if err := json.NewDecoder(idxBody).Decode(&idx); err != nil || idx.SchemaVersion != 2 {
 		return errResponse(c, OciErrorCodeManifestUnknown, "manifest unknown to registry (invalid index)")
 	}
 
-	var found *OciManifest
+	var found *registry.OciManifest
 	for i := range idx.Manifests {
 		m := &idx.Manifests[i]
 		if m.Annotations["org.opencontainers.image.ref.name"] == reference || m.Digest == reference {
@@ -110,7 +111,7 @@ func (h *Handler) GetManifest(c fiber.Ctx) error {
 	}
 
 	manifestDigestWithoutPrefix := found.Digest[len(sha256Prefix):]
-	manifestKey := blobPath(namespace, repository, manifestDigestWithoutPrefix)
+	manifestKey := registry.BlobPath(namespace+"/"+repository, manifestDigestWithoutPrefix)
 
 	manifestBody, manifestInfo, err := h.storage.GetObject(c.Context(), h.bucketName, manifestKey)
 	if err != nil {

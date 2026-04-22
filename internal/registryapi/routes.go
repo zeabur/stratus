@@ -1,4 +1,4 @@
-package registry
+package registryapi
 
 import (
 	"log/slog"
