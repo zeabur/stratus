@@ -8,6 +8,6 @@ COPY . .
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/stratus ./cmd/stratus
 
 FROM gcr.io/distroless/static:nonroot
-COPY --from=build /out/stratus /stratus
+COPY --from=build /out/stratus /bin/stratus
 EXPOSE 3000
-ENTRYPOINT ["/stratus"]
+ENTRYPOINT ["/bin/stratus"]
